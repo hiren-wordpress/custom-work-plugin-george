@@ -3879,3 +3879,60 @@ function uwa_normalizeNumber($value) {
 
     return (float) $value;
 }
+
+/**
+ * Auction meta keys managed internally by the plugin (bid state, status, timing).
+ *
+ * These keys must never be written from the wp-admin "Custom Fields" box,
+ * otherwise saving a product restores the values from when the edit page
+ * was opened and wipes out bids / anti-sniping extensions placed meanwhile.
+ *
+ * @return array
+ */
+function uwa_get_protected_auction_meta_keys() {
+
+	$keys = array(
+		/* bid state */
+		'woo_ua_auction_current_bid',
+		'woo_ua_auction_current_bider',
+		'woo_ua_auction_bid_count',
+		'woo_ua_auction_max_bid',
+		'woo_ua_auction_max_current_bider',
+		'woo_ua_auction_current_bid_proxy',
+		'woo_ua_auction_last_bid',
+		/* status */
+		'woo_ua_auction_closed',
+		'woo_ua_auction_fail_reason',
+		'woo_ua_auction_has_started',
+		'woo_ua_auction_started',
+		'woo_ua_winner_mail_sent',
+		'woo_ua_auction_payed',
+		'woo_ua_order_id',
+		/* timing */
+		'woo_ua_auction_end_date',
+		'woo_ua_auction_extend_time_antisnipping',
+		'woo_ua_auction_extend_time_antisnipping_recursive',
+	);
+
+	$keys = apply_filters( 'uwa_protected_auction_meta_keys', $keys );
+
+	return is_array( $keys ) ? $keys : array();
+}
+
+/**
+ * Mark internal auction meta keys as protected so WordPress core does not list
+ * them in the Custom Fields box and skips them when saving the edit form.
+ */
+add_filter( 'is_protected_meta', 'uwa_protect_auction_meta_keys', 10, 3 );
+function uwa_protect_auction_meta_keys( $protected, $meta_key, $meta_type ) {
+
+	if ( $protected || 'post' !== $meta_type ) {
+		return $protected;
+	}
+
+	if ( in_array( $meta_key, uwa_get_protected_auction_meta_keys(), true ) ) {
+		return true;
+	}
+
+	return $protected;
+}

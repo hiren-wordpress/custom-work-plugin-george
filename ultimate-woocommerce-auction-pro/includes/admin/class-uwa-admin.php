@@ -725,7 +725,13 @@ class UWA_Admin {
 							'class'         => 'datetimepicker',
 							'value'         => $end_date
 						));
-						
+
+						/* end date at page load - used on save to keep anti-sniping extensions made meanwhile */
+						$saved_end_date = get_post_meta($post->ID, 'woo_ua_auction_end_date', true);
+						if ( ! empty( $saved_end_date ) ) {
+							echo '<input type="hidden" name="uwa_original_auction_end_date" value="' . esc_attr( $saved_end_date ) . '" />';
+						}
+
 					$uwa_auto_renew_enable = get_post_meta( $post->ID, 'uwa_auto_renew_enable', true );
 
 					woocommerce_wp_checkbox(
@@ -1192,7 +1198,21 @@ if(is_array($addons) && in_array('uwa_buyers_premium_addon', $addons)){
 			}
 			
 			if( isset( $_POST['woo_ua_auction_end_date']) ) {
-				update_post_meta( $post_id, 'woo_ua_auction_end_date', stripslashes( $_POST['woo_ua_auction_end_date'] ) );			   
+
+				/* skip the update when the admin did not change the end date, so an
+				   anti-sniping extension saved while the edit page was open is kept */
+				$uwa_end_date_unchanged = false;
+				if ( isset( $_POST['uwa_original_auction_end_date'] ) ) {
+					$uwa_posted_end_ts   = strtotime( stripslashes( $_POST['woo_ua_auction_end_date'] ) );
+					$uwa_original_end_ts = strtotime( stripslashes( $_POST['uwa_original_auction_end_date'] ) );
+					if ( $uwa_posted_end_ts && $uwa_original_end_ts && $uwa_posted_end_ts === $uwa_original_end_ts ) {
+						$uwa_end_date_unchanged = true;
+					}
+				}
+
+				if ( ! $uwa_end_date_unchanged ) {
+					update_post_meta( $post_id, 'woo_ua_auction_end_date', stripslashes( $_POST['woo_ua_auction_end_date'] ) );
+				}
 			}
 			
 			/* Add In Pro */
